@@ -32,46 +32,18 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
     return result;
 }
 
-__attribute__((target("arm")))
-void undo_patches1(void){
-    debug_printf("undoing patches\n");
-    // Load File
-    ASM_T_PATCH(0x050254D0,
-        "bl 0x5027954\n" 
-        "ldr R0, [R7,#0xC]\n"
-        "bl 0x501caa8\n"
-        "movs r4, r0\n"
-    );
-
-    // ReadCOS patch
-    ASM_T_PATCH(0x0501DD72,
-        "ldr r1, [r7, #0x14]\n" 
-        "movs r0, r6\n"
-        "ldr r2, [r7,#0xc]\n"
-        "bl 0x50024ec\n"
-    );
-    ASM_T_PATCH(0x051105C8,
-        ".syntax unified\n"
-        "ADDS R0, #0x8E\n" 
-        "movs r1, #0\n"
-        "movs r2, r5\n"
-        "bl 0x50024ec\n"
-    );
-    debug_printf("done undoing patches\n");
-}
-
 const u8 undoLoadFile[] = { 0x68, 0xf8, 0xf7, 0xf7, 0xfa, 0xe7, 0x1c, 0x04 };
 const u8 undoCos1[] = { 0x1c, 0x30, 0x68, 0xfa, 0xf7, 0xe4, 0xfb, 0xb8 };
 
 void undo_patches(void){
-    debug_printf("undoing patches\n");
+    debug_printf("payloader: undoing patches\n");
     // Load File
     memcpy((void*)0x050254D4, undoLoadFile, sizeof(undoLoadFile));
 
     // COS 1
     memcpy((void*)0x0501DD74, undoCos1, sizeof(undoCos1));
 
-    debug_printf("done undoing patches\n");
+    debug_printf("payloader: done undoing patches\n");
 }
 
 __attribute__((target("thumb")))
@@ -117,28 +89,4 @@ int __attribute__((used)) _MCP_ReadCOSXml_patch(uint32_t u1, uint32_t u2, MCPPPr
     }
 
     return res;
-}
-
-__attribute__((target("thumb")))
-int __attribute__((used)) _MCP_ioctl100_patch(ipcmessage *msg) {
-    debug_printf("DNSpresso: MCP_ioctl100_patch\n");
-
-    uint64_t currentColdbootOS = *((uint64_t*)0x050b8174);
-    uint64_t currentColdbootTitle = *((uint64_t*)0x050b817c);
-
-    debug_printf("DNSpresso: title0x%016llx os 0x%016llx\n", currentColdbootTitle, currentColdbootOS);
-
-    // This triggers a full cafe relaunch into the specified title
-    // not entirely sure how shell commands handle these args but this seems to work
-    int argc = 2;
-    char* argv[] = {
-        "",
-        "",
-        (char*) (uint32_t) (currentColdbootTitle >> 32),
-        (char*) (uint32_t) (currentColdbootTitle & 0xffffffff),
-    };
-    int res = shellCommand_title_launch(argc, argv);
-    debug_printf("DNSpresso: shellCommand_title_launch: %d\n", res);
-
-    return 4;
 }
