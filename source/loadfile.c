@@ -63,7 +63,9 @@ int __attribute__((used)) _MCP_LoadFile_patch(ipcmessage *msg)
     if (!replaced && strncmp(request->name + (strnlen(request->name, 64) - 7), "men.rpx", sizeof("men.rpx")) == 0) {
         replaced = 1;
         undo_patches();
-        return MCP_LoadCustomFile(msg->ioctl.buffer_io, msg->ioctl.length_io, request->pos);
+        int result = MCP_LoadCustomFile(msg->ioctl.buffer_io, msg->ioctl.length_io, request->pos);
+        if(result)
+            return result;
     }
 
     return real_MCP_LoadFile(msg);
