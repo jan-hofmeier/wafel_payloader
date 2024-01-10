@@ -17,10 +17,13 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
 {
     int fsaFd = FSA_Open();
     FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
-    iosClose(fsaFd);
 
     int bytesRead = 0;
     int result = MCP_DoLoadFile("/vol/storage_homebrew/wiiu/root.rpx", NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
+
+    FSA_Unmount(fsaFd, "/vol/storage_iosu_homebrew", 0x80000002);
+    iosClose(fsaFd);
+    
     if (result >= 0) {
         if (!bytesRead) {
             return 0;
@@ -64,7 +67,7 @@ int __attribute__((used)) _MCP_LoadFile_patch(ipcmessage *msg)
         replaced = 1;
         undo_patches();
         int result = MCP_LoadCustomFile(msg->ioctl.buffer_io, msg->ioctl.length_io, request->pos);
-        if(result)
+        if(result > 0)
             return result;
     }
 
