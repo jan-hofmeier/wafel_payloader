@@ -16,11 +16,13 @@ __attribute__((target("thumb")))
 static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
 {
     int fsaFd = FSA_Open();
-    FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
-    iosClose(fsaFd);
+    FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_iosu_homebrew", 2, NULL, 0);
 
     int bytesRead = 0;
-    int result = MCP_DoLoadFile("/vol/storage_homebrew/wiiu/root.rpx", NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
+    int result = MCP_DoLoadFile("/vol/storage_iosu_homebrew/wiiu/root.rpx", NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
+    
+    FSA_Unmount(fsaFd, "/vol/storage_iosu_homebrew", 0x80000002);
+    iosClose(fsaFd);
     if (result >= 0) {
         if (!bytesRead) {
             return 0;
@@ -29,6 +31,7 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
             return bytesRead;
         }
     }
+
     return result;
 }
 
@@ -62,6 +65,7 @@ void undo_patches1(void){
 
 const u8 undoLoadFile[] = { 0x68, 0xf8, 0xf7, 0xf7, 0xfa, 0xe7, 0x1c, 0x04 };
 const u8 undoCos1[] = { 0x1c, 0x30, 0x68, 0xfa, 0xf7, 0xe4, 0xfb, 0xb8 };
+const u8 undoCos2[] = { 0x21, 0x0, 0x1c, 0x2a, 0xf6, 0xf1, 0xff, 0x8d };
 
 void undo_patches(void){
     debug_printf("undoing patches\n");
@@ -69,7 +73,10 @@ void undo_patches(void){
     memcpy((void*)0x050254D4, undoLoadFile, sizeof(undoLoadFile));
 
     // COS 1
-    memcpy((void*)0x0501DD74, undoLoadFile, sizeof(undoCos1));
+    memcpy((void*)0x0501DD74, undoCos1, sizeof(undoCos1));
+
+    // COS 2
+    // memcpy((void*)0x051105CA, undoCos2, sizeof(undoCos2));
 
     debug_printf("done undoing patches\n");
 }
