@@ -30,15 +30,4 @@ MCP_ReadCOSXml_patch2:
     ldr r12, =_MCP_ReadCOSXml_patch
     bx r12
 
-.extern _MCP_ioctl100_patch
-.global MCP_ioctl100_patch
-MCP_ioctl100_patch:
-    .arm
-    movs r8, lr
-    ldr r12, =_MCP_ioctl100_patch
-    blx r12
-    cmp  R0, #0
-    ldreq r8,=0x502524E
-    bx r8
-
 
