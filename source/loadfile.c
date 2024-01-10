@@ -69,7 +69,7 @@ void undo_patches(void){
     memcpy((void*)0x050254D4, undoLoadFile, sizeof(undoLoadFile));
 
     // COS 1
-    memcpy((void*)0x0501DD74, undoLoadFile, sizeof(undoCos1));
+    memcpy((void*)0x0501DD74, undoCos1, sizeof(undoCos1));
 
     debug_printf("done undoing patches\n");
 }
