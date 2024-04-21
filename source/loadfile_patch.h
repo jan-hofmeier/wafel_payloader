@@ -1,0 +1,1 @@
+void loadfile_install_patches(void);
