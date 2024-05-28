@@ -19,7 +19,7 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
     FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
 
     int bytesRead = 0;
-    int result = MCP_DoLoadFile("/vol/storage_homebrew/wiiu/root.rpx", NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
+    int result = MCP_DoLoadFile("/vol/storage_homebrew/wiiu/environments/aroma/root.rpx", NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
 
     FSA_Unmount(fsaFd, "/vol/storage_iosu_homebrew", 0x80000002);
     iosClose(fsaFd);
