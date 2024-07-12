@@ -6,11 +6,12 @@
 #include <wafel/ios/svc.h>
 #include <wafel/utils.h>
 #include <wafel/patch.h>
+#include <wafel/trampoline.h>
 
-int (*const real_MCP_LoadFile)(ipcmessage *msg) = (void*) (0x0501CAA8 | 1);
+#define BL_LoadFile 0x050254d6
+#define BL_ReadCos  0x0501dd78
+
 int (*const MCP_DoLoadFile)(const char *path, const char *path2, void *outputBuffer, uint32_t outLength, uint32_t pos, int *bytesRead, uint32_t unk) = (void*) (0x05017248 | 1);
-int (*const real_MCP_ReadCOSXml_patch)(uint32_t u1, uint32_t u2, MCPPPrepareTitleInfo *xmlData) = (void*) (0x050024ec | 1);
-int (*const shellCommand_title_launch)(int argc, char** argv) = (void*) (0x0510c9a0 | 1);
 
 __attribute__((target("thumb")))
 static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
@@ -35,25 +36,25 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
     return result;
 }
 
-const u8 undoLoadFile[] = { 0x68, 0xf8, 0xf7, 0xf7, 0xfa, 0xe7, 0x1c, 0x04 };
-const u8 undoCos1[] = { 0x1c, 0x30, 0x68, 0xfa, 0xf7, 0xe4, 0xfb, 0xb8 };
+u8 undoLoadFile[4];
+u8 undoCos1[4];
 
 void undo_patches(void){
     debug_printf("payloader: undoing patches\n");
     // Load File
-    memcpy((void*)0x050254D4, undoLoadFile, sizeof(undoLoadFile));
+    memcpy((void*)BL_LoadFile, undoLoadFile, sizeof(undoLoadFile));
 
     // COS 1
-    memcpy((void*)0x0501DD74, undoCos1, sizeof(undoCos1));
+    memcpy((void*)BL_ReadCos, undoCos1, sizeof(undoCos1));
 
     debug_printf("payloader: done undoing patches\n");
 }
 
 __attribute__((target("thumb")))
-int __attribute__((used)) _MCP_LoadFile_patch(ipcmessage *msg)
+int __attribute__((used)) MCP_LoadFile_patch(ipcmessage *msg, int r1, int r2, int r3, int (*real_MCP_LoadFile)(ipcmessage *msg))
 {
     //return real_MCP_LoadFile(msg);
-    debug_printf("Inside LoadFile Patch\n");
+    debug_printf("Inside LoadFile Patch. real_MCP_LoadFile: %p\n", real_MCP_LoadFile);
     MCPLoadFileRequest *request = (MCPLoadFileRequest *) msg->ioctl.buffer_in;
 
     // we only care about Foreground app/COS-MASTER for now.
@@ -74,9 +75,9 @@ int __attribute__((used)) _MCP_LoadFile_patch(ipcmessage *msg)
     return real_MCP_LoadFile(msg);
 }
 
-int __attribute__((used)) _MCP_ReadCOSXml_patch(uint32_t u1, uint32_t u2, MCPPPrepareTitleInfo *xmlData)
+int __attribute__((used)) MCP_ReadCOSXml_patch(uint32_t u1, uint32_t u2, MCPPPrepareTitleInfo *xmlData, int r3, int (*real_MCP_ReadCOSXml)(uint32_t, uint32_t, MCPPPrepareTitleInfo*))
 {
-    int res = real_MCP_ReadCOSXml_patch(u1, u2, xmlData);
+    int res = real_MCP_ReadCOSXml(u1, u2, xmlData);
 
     // Give the Wii U menu codegen access for the custom launch.rpx
     if (xmlData->titleId == 0x0005001010040000 ||
@@ -94,4 +95,13 @@ int __attribute__((used)) _MCP_ReadCOSXml_patch(uint32_t u1, uint32_t u2, MCPPPr
     }
 
     return res;
+}
+
+
+
+void loadfile_install_patches(void){
+    memcpy16(undoLoadFile, (void*)ios_elf_vaddr_to_paddr(BL_LoadFile), sizeof(undoLoadFile));
+    trampoline_t_blreplace(BL_LoadFile, MCP_LoadFile_patch);
+    memcpy16(undoCos1, (void*)ios_elf_vaddr_to_paddr(BL_ReadCos), sizeof(undoCos1));
+    trampoline_t_blreplace(BL_ReadCos, MCP_ReadCOSXml_patch);
 }
