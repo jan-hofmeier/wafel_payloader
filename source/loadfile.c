@@ -74,7 +74,9 @@ int __attribute__((used)) MCP_LoadFile_patch(ipcmessage *msg, int r1, int r2, in
     debug_printf("LoadFile: %s\n", request->name);
     // Replace the menu RPX (once)
     static int replaced = 0;
-    if (!replaced && strncmp(request->name + (strnlen(request->name, 64) - 7), "men.rpx", sizeof("men.rpx")) == 0) {
+    if (!replaced && 
+        (strcmp(request->name + (strnlen(request->name, 64) - 7), "men.rpx") == 0 || 
+         strcmp(request->name + (strnlen(request->name, 64) - 8), "safe.rpx") == 0)) {
         replaced = 1;
         undo_patches();
         int result = MCP_LoadCustomFile(msg->ioctl.buffer_io, msg->ioctl.length_io, request->pos);
