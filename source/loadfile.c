@@ -13,6 +13,12 @@
 
 int (*const MCP_DoLoadFile)(const char *path, const char *path2, void *outputBuffer, uint32_t outLength, uint32_t pos, int *bytesRead, uint32_t unk) = (void*) (0x05017248 | 1);
 
+
+char *rpx_locations[] = {  "/vol/storage_homebrew/wiiu/environments/aroma/root.rpx", 
+                                    "/vol/storage_homebrew/wiiu/environments/tiramisu/root.rpx",
+                                    "/vol/storage_homebrew/wiiu/root.rpx" 
+                                };
+
 __attribute__((target("thumb")))
 static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
 {
@@ -20,7 +26,11 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
     FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
 
     int bytesRead = 0;
-    int result = MCP_DoLoadFile("/vol/storage_homebrew/wiiu/environments/aroma/root.rpx", NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
+
+    int result = -1;
+    for(int i=0; i<sizeof(rpx_locations)/sizeof(char*) && result < 0; i++){
+        result = MCP_DoLoadFile(rpx_locations[i], NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
+    }
 
     FSA_Unmount(fsaFd, "/vol/storage_iosu_homebrew", 0x80000002);
     iosClose(fsaFd);
