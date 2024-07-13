@@ -2,13 +2,12 @@
 
 This plugin for [stroopwafel](https://github.com/shinyquagsire23/stroopwafel) allows you to load a payload.elf loader like **[PayloadFromRPX](https://github.com/wiiu-env/PayloadFromRPX)** from SD
 
-- Patches the LoadFile IOSU functionto redirect `men.rpx` to `sd:/wiiu/root.rpx`
+- Patches the LoadFile IOSU functionto redirect `men.rpx` and `safe.rpx` to `sd:/wiiu/environments/aroma/root.rpx` or `sd:/wiiu/environments/tiramisu/root.rpx` or `/vol/storage_homebrew/wiiu/root.rpx` (tries each in that order). 
 - undos all patches once triggered to not interfere with mocha.
 
 ## How to use
 
-- Copy the `wafel_payloader.ipx` to `/wiiu/ios_plugins`
-- Copy the PayloadFromRPX to `sd:/wiiu/root.rpx`
+- Copy the `wafel_payloader.ipx` to `sd:/wiiu/ios_plugins`
 
 
 ## Building
