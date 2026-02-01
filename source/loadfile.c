@@ -11,7 +11,10 @@
 #define BL_LoadFile 0x050254d6
 #define BL_ReadCos  0x0501dd78
 
-int (*const MCP_DoLoadFile)(const char *path, const char *path2, void *outputBuffer, uint32_t outLength, uint32_t pos, int *bytesRead, uint32_t unk) = (void*) (0x05017248 | 1);
+LINKABLE bool wafel_usb_partition_wait_usbsd(void);
+static int (* wait_for_dev)(const char *dev_path, int timeout_ms) = (void*) (0x05016cd8 | 1);
+
+static int (*const MCP_DoLoadFile)(const char *path, const char *path2, void *outputBuffer, uint32_t outLength, uint32_t pos, int *bytesRead, uint32_t unk) = (void*) (0x05017248 | 1);
 
 
 char *rpx_locations[] = {  "/vol/storage_homebrew/wiiu/environments/aroma/root.rpx", 
@@ -19,14 +22,31 @@ char *rpx_locations[] = {  "/vol/storage_homebrew/wiiu/environments/aroma/root.r
                                     "/vol/storage_homebrew/wiiu/root.rpx" 
                                 };
 
+static bool wait_usbsd(void){
+    if (wafel_usb_partition_wait_usbsd){
+        return wafel_usb_partition_wait_usbsd();
+    }
+    return false;
+}
+
 __attribute__((target("thumb")))
 static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
 {
+    debug_printf("PAYLOADER: wait_usbsd=%d\n", wait_usbsd);
+    bool not_found = 1;
+    // wait 20 seconds for usbsd to appear
+    for (int i = 0; i<20 && not_found && wait_usbsd(); i++){
+        debug_printf("PAYLOADER: waiting for usbsd...\n");
+        // 1 second
+        not_found = wait_for_dev("/dev/sdcard01", 1000000);
+        debug_printf("PAYLOADER: usbsd ready\n");
+    }
     int fsaFd = FSA_Open();
-    FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
+    int res = FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
+    if(res)
+        return res;
 
     int bytesRead = 0;
-
     int result = -1;
     for(int i=0; i<sizeof(rpx_locations)/sizeof(char*) && result < 0; i++){
         result = MCP_DoLoadFile(rpx_locations[i], NULL, buffer_out, buffer_len, pos, &bytesRead, 0);
