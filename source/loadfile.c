@@ -33,7 +33,7 @@ __attribute__((target("thumb")))
 static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
 {
     debug_printf("PAYLOADER: wait_usbsd=%d\n", wait_usbsd);
-    bool not_found = 1;
+    int not_found = wait_for_dev("/dev/sdcard01", 2000000);
     // wait 20 seconds for usbsd to appear
     for (int i = 0; i<20 && not_found && wait_usbsd(); i++){
         debug_printf("PAYLOADER: waiting for usbsd...\n");
@@ -41,6 +41,10 @@ static int MCP_LoadCustomFile(void *buffer_out, int buffer_len, int pos)
         not_found = wait_for_dev("/dev/sdcard01", 1000000);
         debug_printf("PAYLOADER: usbsd ready\n");
     }
+
+    if(not_found)
+        return -1;
+
     int fsaFd = FSA_Open();
     int res = FSA_Mount(fsaFd, "/dev/sdcard01", "/vol/storage_homebrew", 2, NULL, 0);
     if(res)
